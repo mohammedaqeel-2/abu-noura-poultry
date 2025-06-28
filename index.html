@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مشروع أبو نورة</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      text-align: right;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    input,
+    select,
+    button {
+      padding: 6px;
+      margin: 5px 0;
+      width: 100%;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    #customClient {
+      display: none;
+    }
+    .delete-btn {
+      background-color: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    tfoot td {
+      font-weight: bold;
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body onload="init()">
+  <h2>تسجيل مبيعات مشروع أبو نورة</h2>
+
+  <div class="form-group">
+    <label for="client">اسم العميل:</label>
+    <select id="client" onchange="toggleCustomClient()">
+      <option value="أرياف القصيم">أرياف القصيم</option>
+      <option value="الوادي">الوادي</option>
+      <option value="الصالحية">الصالحية</option>
+      <option value="آخر">آخر</option>
+    </select>
+    <input type="text" id="customClient" placeholder="اكتب اسم العميل" />
+  </div>
+
+  <div class="form-group">
+    <label for="quantity">العدد:</label>
+    <input type="number" id="quantity" min="1" step="1" inputmode="numeric" />
+  </div>
+
+  <div class="form-group">
+    <label for="price">السعر:</label>
+    <input type="number" id="price" min="0.01" step="0.01" inputmode="decimal" />
+  </div>
+
+  <div class="form-group">
+    <label for="date">التاريخ:</label>
+    <input type="date" id="date" />
+  </div>
+
+  <button id="addBtn">إضافة</button>
+
+  <table id="records">
+    <thead>
+      <tr>
+        <th>اسم العميل</th>
+        <th>العدد</th>
+        <th>السعر</th>
+        <th>التاريخ</th>
+        <th>الإجمالي</th>
+        <th>حذف</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4">الإجمالي الكلي</td>
+        <td id="totalSum">0</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <script>
+    function init() {
+      loadRecords();
+      document.getElementById("addBtn").addEventListener("click", addRecord);
+    }
+
+    function toggleCustomClient() {
+      const clientSelect = document.getElementById("client");
+      const customInput = document.getElementById("customClient");
+      customInput.style.display = clientSelect.value === "آخر" ? "block" : "none";
+    }
+
+    function addRecord() {
+      const clientSelect = document.getElementById("client");
+      const customInput = document.getElementById("customClient");
+      const client =
+        clientSelect.value === "آخر" ? customInput.value.trim() : clientSelect.value;
+
+      const quantityInput = document.getElementById("quantity");
+      const priceInput = document.getElementById("price");
+      const dateInput = document.getElementById("date");
+
+      const quantity = parseInt(quantityInput.value, 10);
+      const price = parseFloat(priceInput.value);
+      const date = dateInput.value;
+
+      if (
+        !client ||
+        isNaN(quantity) ||
+        quantity <= 0 ||
+        isNaN(price) ||
+        price <= 0 ||
+        !date
+      ) {
+        alert("الرجاء تعبئة جميع الحقول بقيم صحيحة");
+        return;
+      }
+
+      const total = quantity * price;
+
+      const record = { client, quantity, price, date, total };
+
+      let records = JSON.parse(localStorage.getItem("poultry_records") || "[]");
+      records.push(record);
+      localStorage.setItem("poultry_records", JSON.stringify(records));
+
+      appendRow(record, records.length - 1);
+      updateTotalSum();
+
+      quantityInput.value = "";
+      priceInput.value = "";
+      dateInput.value = "";
+      if (clientSelect.value === "آخر") customInput.value = "";
+    }
+
+    function appendRow(record, index) {
+      const table = document.getElementById("records").querySelector("tbody");
+      const row = table.insertRow();
+      row.setAttribute("data-index", index);
+      row.innerHTML = `
+        <td>${record.client}</td>
+        <td>${record.quantity}</td>
+        <td>${record.price}</td>
+        <td>${record.date}</td>
+        <td>${record.total}</td>
+        <td><button class="delete-btn" onclick="deleteRecord(${index})">حذف</button></td>
+      `;
+    }
+
+    function loadRecords() {
+      const records = JSON.parse(localStorage.getItem("poultry_records") || "[]");
+      records.forEach((record, index) => appendRow(record, index));
+      updateTotalSum();
+    }
+
+    function deleteRecord(index) {
+      let records = JSON.parse(localStorage.getItem("poultry_records") || "[]");
+      records.splice(index, 1);
+      localStorage.setItem("poultry_records", JSON.stringify(records));
+
+      const tbody = document.getElementById("records").querySelector("tbody");
+      tbody.innerHTML = "";
+      records.forEach((record, idx) => appendRow(record, idx));
+      updateTotalSum();
+    }
+
+    function updateTotalSum() {
+      let records = JSON.parse(localStorage.getItem("poultry_records") || "[]");
+      let sum = records.reduce((acc, rec) => acc + rec.total, 0);
+      document.getElementById("totalSum").textContent = sum.toFixed(2);
+    }
+  </script>
+</body>
+</html>
